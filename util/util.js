@@ -5,8 +5,10 @@ const cryptoHash = require('./crypto-hash');
 const ec = new EC('secp256k1');
 
 const verifySignature = ({ publicKey, data, signature }) => {
-  const keyFromPublic = ec.keyFromPublic(publicKey, 'hex'); //Recives the publick Key or Address in hexadecimal format
+  const keyFromPublic = ec.keyFromPublic(publicKey, 'hex'); //Recives the public Key or Address in hexadecimal format
 
+  //The Eliptic pakage comes with a veryfi method included
+  //The data passed to the verify method has to be in hex form
   return keyFromPublic.verify(cryptoHash(data), signature);
 };
 

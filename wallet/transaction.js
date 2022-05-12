@@ -18,6 +18,7 @@ class Transaction {
   createOutputMap({ senderWallet, recipient, amount }) {
     const outputMap = {};
 
+    //
     outputMap[recipient] = amount;
     outputMap[senderWallet.publicKey] = senderWallet.balance - amount;
 
@@ -27,8 +28,7 @@ class Transaction {
   //===============================================================
   //======================== CREATE INPUT  ========================
   //===============================================================
-  //
-  //===============================================================
+
   createInput({ senderWallet, outputMap }) {
     return {
       timestamp: Date.now(),
@@ -37,11 +37,35 @@ class Transaction {
       signature: senderWallet.sign(outputMap),
     };
   }
+  //===============================================================
+  //=================== UPDATE TRANSACTION  =======================
+  //===============================================================
+  //Used if we want to update the transaction field
+  //===============================================================
+  update({ senderWallet, recipient, amount }) {
+    if (amount > this.outputMap[senderWallet.publicKey]) {
+      throw new Error('Amount exceeds balance');
+    }
+
+    if (!this.outputMap[recipient]) {
+      //Designate a new amount
+      this.outputMap[recipient] = amount;
+    } else {
+      this.outputMap[recipient] = this.outputMap[recipient] + amount;
+    }
+
+    //Substract the amount
+    this.outputMap[senderWallet.publicKey] =
+      this.outputMap[senderWallet.publicKey] - amount;
+
+    this.input = this.createInput({ senderWallet, outputMap: this.outputMap });
+  }
 
   //===============================================================
   //==================== VALID TRANSACTION  =======================
   //===============================================================
-  //
+  //This will return a true or false value, depending whether or
+  //not we should trust the transaction as well as its input data
   //===============================================================
   static validTransaction(transaction) {
     const {
@@ -49,10 +73,12 @@ class Transaction {
       outputMap,
     } = transaction;
 
+    //check to see if the amount is equal to the output map
     const outputTotal = Object.values(outputMap).reduce(
       (total, outputAmount) => total + outputAmount
     );
 
+    //if the amount is not equal to the ouputTotal
     if (amount !== outputTotal) {
       console.error(`Invalid trnasaction from ${address}`);
       return false;
