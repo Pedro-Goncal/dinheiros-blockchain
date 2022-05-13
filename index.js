@@ -4,6 +4,7 @@ const Blockchain = require('./blockchain/blockchain');
 const PubSub = require('./app/pubsub');
 const TransactionPool = require('./wallet/transaction-pool');
 const Wallet = require('./wallet/wallet');
+const TransactionMiner = require('./app/transaction-miner');
 
 //TERMINAL COLOURS FOR FUN
 const color = require('colors');
@@ -71,8 +72,16 @@ const transactionPool = new TransactionPool();
 //Initialize Wallet
 const wallet = new Wallet();
 
-//INITIALIZE PUB SUB
+//Initialize pub sub
 const pubsub = new PubSub({ blockchain, transactionPool });
+
+//Initialize Transaction Miner
+const transactionMiner = new TransactionMiner({
+  blockchain,
+  transactionPool,
+  wallet,
+  pubsub,
+});
 
 //ROOT NODE ADDRESS
 const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`;
@@ -110,7 +119,11 @@ app.post('/api/transact', (req, res) => {
       transaction.update({ senderWallet: wallet, recipient, amount });
     } else {
       //Create a new transaction
-      transaction = wallet.createTransaction({ recipient, amount });
+      transaction = wallet.createTransaction({
+        recipient,
+        amount,
+        chain: blockchain.chain,
+      });
     }
   } catch (error) {
     return res.status(400).json({ type: 'error', message: error.message });
@@ -130,6 +143,24 @@ app.post('/api/transact', (req, res) => {
 
 app.get('/api/transaction-pool-map', (req, res) => {
   res.status(200).json(transactionPool.transactionMap);
+});
+
+app.get('/api/mine-transactions', (req, res) => {
+  transactionMiner.mineTransactions();
+
+  res.redirect('/api/blocks');
+});
+
+app.get('/api/wallet-info', (req, res) => {
+  const address = wallet.publicKey;
+
+  res.json({
+    address,
+    balance: Wallet.calculateBalance({
+      chain: blockchain.chain,
+      address,
+    }),
+  });
 });
 
 const PORT = PEER_PORT || DEFAULT_PORT;

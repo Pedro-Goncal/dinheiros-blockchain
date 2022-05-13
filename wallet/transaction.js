@@ -1,11 +1,17 @@
 const uuid = require('uuid/v1');
 const { verifySignature } = require('../util/util');
+const { REWARD_INPUT, MINING_REWARD } = require('../config');
 
 class Transaction {
-  constructor({ senderWallet, recipient, amount }) {
+  constructor({ senderWallet, recipient, amount, outputMap, input }) {
     this.id = uuid();
-    this.outputMap = this.createOutputMap({ senderWallet, recipient, amount });
-    this.input = this.createInput({ senderWallet, outputMap: this.outputMap });
+
+    //If the output map and the input are defined it means that it is creating a reward transaction and we do not want to
+    // create a signature, we want it to be hardcoded as it is a reward and not an actual transaction
+    this.outputMap =
+      outputMap || this.createOutputMap({ senderWallet, recipient, amount });
+    this.input =
+      input || this.createInput({ senderWallet, outputMap: this.outputMap });
   }
 
   //===============================================================
@@ -90,6 +96,16 @@ class Transaction {
     }
 
     return true;
+  }
+  //===============================================================
+  //=================== REWARD TRANSACTION  =======================
+  //===============================================================
+
+  static rewardTransaction({ minerWallet }) {
+    return new this({
+      input: REWARD_INPUT,
+      outputMap: { [minerWallet.publicKey]: MINING_REWARD },
+    });
   }
 }
 
