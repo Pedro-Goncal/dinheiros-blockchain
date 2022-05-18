@@ -7,7 +7,9 @@
     "test": "jest --watchAll",
     "start": "index.js",
     "dev": "nodemon",
-    "dev-peer": "cross-env GENERATE_PEER_PORT='true' nodemon index.js"
+    "dev-peer": "cross-env GENERATE_PEER_PORT='true' nodemon index.js",
+    "build-client": "parcel build client/src/index.html --out-dir client/dist",
+    "dev-client": "parcel client/src/index.html --out-dir client/dist"
   },
   "jest": {
     "testEnvironment": "node"
@@ -16,19 +18,22 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@babel/core": "^7.17.10",
     "cross-env": "^5.2.0",
     "jest": "^23.6.0"
   },
   "dependencies": {
-    "babel-core": "^6.26.3",
-    "babel-plugin-transform-class-properties": "^6.24.1",
     "colors": "^1.4.0",
+    "core-js": "^2.6.12",
     "cors": "^2.8.5",
     "dotenv": "^16.0.0",
     "elliptic": "^6.4.1",
     "express": "^4.17.3",
     "hex-to-binary": "^1.0.1",
+    "parcel-bundler": "^1.10.3",
     "pubnub": "^4.21.6",
+    "react": "^16.6.0",
+    "react-dom": "^16.6.0",
     "redis": "^2.8.0",
     "request": "^2.88.0",
     "uuid": "^3.3.2"

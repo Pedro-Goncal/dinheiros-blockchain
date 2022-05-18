@@ -1,5 +1,6 @@
 const express = require('express');
 const request = require('request');
+const path = require('path');
 const Blockchain = require('./blockchain/blockchain');
 const PubSub = require('./app/pubsub');
 const TransactionPool = require('./wallet/transaction-pool');
@@ -62,6 +63,7 @@ app.use(cors());
 
 //BODY PARSER
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'client/dist')));
 
 //INITIALIZE BLOCKCHAIN
 const blockchain = new Blockchain();
@@ -85,6 +87,62 @@ const transactionMiner = new TransactionMiner({
 
 //ROOT NODE ADDRESS
 const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`;
+
+//=========================================
+//=============== Seeding =================
+//=========================================
+if (process.env.NODE_ENV === 'development') {
+  const walletFoo = new Wallet();
+  const walletBar = new Wallet();
+
+  const generateWalletTransaction = ({ wallet, recipient, amount }) => {
+    const transaction = wallet.createTransaction({
+      recipient,
+      amount,
+      chain: blockchain.chain,
+    });
+
+    transactionPool.setTransaction(transaction);
+  };
+
+  const walletAction = () =>
+    generateWalletTransaction({
+      wallet,
+      recipient: walletFoo.publicKey,
+      amount: 5,
+    });
+
+  const walletFooAction = () =>
+    generateWalletTransaction({
+      wallet: walletFoo,
+      recipient: walletBar.publicKey,
+      amount: 10,
+    });
+
+  const walletBarAction = () =>
+    generateWalletTransaction({
+      wallet: walletBar,
+      recipient: wallet.publicKey,
+      amount: 15,
+    });
+
+  for (let i = 0; i < 20; i++) {
+    if (i % 3 === 0) {
+      walletAction();
+      walletFooAction();
+    } else if (i % 3 === 1) {
+      walletAction();
+      walletBarAction();
+    } else {
+      walletFooAction();
+      walletBarAction();
+    }
+
+    transactionMiner.mineTransactions();
+  }
+}
+
+//=========================================
 
 //===================
 //APIs
@@ -163,6 +221,15 @@ app.get('/api/wallet-info', (req, res) => {
   });
 });
 
+//=====================================
+//========== FRONT END API's ==========
+//=====================================
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, './client/dist/index.html'));
+});
+
+//======================================================================================
 const PORT = PEER_PORT || DEFAULT_PORT;
 
 app.listen(PORT, () => {

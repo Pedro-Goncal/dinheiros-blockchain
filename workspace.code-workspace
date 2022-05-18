@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "..\\..\\..\\Tools\\redis-latest"
+		}
+	],
+	"settings": {}
+}
