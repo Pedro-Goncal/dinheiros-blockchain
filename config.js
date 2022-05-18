@@ -1,5 +1,4 @@
-const MINE_RATE = 1000; //How long should it take, on average to mine a block in milliseconds
-
+const MINE_RATE = 1000;
 const INITIAL_DIFFICULTY = 3;
 
 const GENESIS_DATA = {
@@ -13,9 +12,7 @@ const GENESIS_DATA = {
 
 const STARTING_BALANCE = 1000;
 
-const REWARD_INPUT = {
-  address: '*authorized-reward*',
-};
+const REWARD_INPUT = { address: '*authorized-reward*' };
 
 const MINING_REWARD = 50;
 

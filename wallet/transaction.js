@@ -24,7 +24,6 @@ class Transaction {
   createOutputMap({ senderWallet, recipient, amount }) {
     const outputMap = {};
 
-    //
     outputMap[recipient] = amount;
     outputMap[senderWallet.publicKey] = senderWallet.balance - amount;
 
@@ -48,13 +47,13 @@ class Transaction {
   //===============================================================
   //Used if we want to update the transaction field
   //===============================================================
+
   update({ senderWallet, recipient, amount }) {
     if (amount > this.outputMap[senderWallet.publicKey]) {
       throw new Error('Amount exceeds balance');
     }
 
     if (!this.outputMap[recipient]) {
-      //Designate a new amount
       this.outputMap[recipient] = amount;
     } else {
       this.outputMap[recipient] = this.outputMap[recipient] + amount;
@@ -86,12 +85,12 @@ class Transaction {
 
     //if the amount is not equal to the ouputTotal
     if (amount !== outputTotal) {
-      console.error(`Invalid trnasaction from ${address}`);
+      console.error(`Invalid transaction from ${address}`);
       return false;
     }
 
     if (!verifySignature({ publicKey: address, data: outputMap, signature })) {
-      console.error(`Invalid Signature from ${address}`);
+      console.error(`Invalid signature from ${address}`);
       return false;
     }
 

@@ -1,6 +1,8 @@
 const express = require('express');
 const request = require('request');
 const path = require('path');
+
+//Classes
 const Blockchain = require('./blockchain/blockchain');
 const PubSub = require('./app/pubsub');
 const TransactionPool = require('./wallet/transaction-pool');
@@ -19,27 +21,35 @@ dotenv.config();
 //CORS
 const cors = require('cors');
 
-//PORT
-const DEFAULT_PORT = 4000;
-let PEER_PORT;
+//INITIALIZE EXPRESS
+const app = express();
+
+//INITIALIZE COORS
+app.use(cors());
+
+//BODY PARSER
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'client/dist')));
 
 //REDIS URL
 const REDIS_URL = isDevelopment
   ? 'redis://127.0.0.1:6379'
   : 'redis://:pb0eb61391fb81089f12964620604dd14b365545a09a0e604658dcfe5201cddaa@ec2-52-72-65-222.compute-1.amazonaws.com:32509';
 
-if (process.env.GENERATE_PEER_PORT === 'true') {
-  PEER_PORT = DEFAULT_PORT + Math.ceil(Math.random() * 1000);
-}
+//PORT
+const DEFAULT_PORT = 4000;
+let PEER_PORT;
 
 //SYNC CHAINS FUNCTION
+
 const syncWithRootState = () => {
   request(
     { url: `${ROOT_NODE_ADDRESS}/api/blocks` },
     (error, response, body) => {
       if (!error && response.statusCode === 200) {
         const rootChain = JSON.parse(body);
-        console.log('Replace chain on a sync with ===>', rootChain);
+
+        console.log('replace chain on a sync with', rootChain);
         blockchain.replaceChain(rootChain);
       }
     }
@@ -55,22 +65,11 @@ const syncWithRootState = () => {
           'replace transaction pool map on a sync with',
           rootTransactionPoolMap
         );
-
         transactionPool.setMap(rootTransactionPoolMap);
       }
     }
   );
 };
-
-//INITIALIZE EXPRESS
-const app = express();
-
-//INITIALIZE COORS
-app.use(cors());
-
-//BODY PARSER
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'client/dist')));
 
 //INITIALIZE BLOCKCHAIN
 const blockchain = new Blockchain();
@@ -166,10 +165,7 @@ app.post('/api/mine', (req, res) => {
 
   pubsub.broadcastChain();
 
-  res.json(blockchain.chain);
-
-  //THIS IS DUMB WHY WOULD YOU????????
-  // res.redirect('/api/blocks');
+  res.redirect('/api/blocks');
 });
 
 app.post('/api/transact', (req, res) => {
@@ -186,7 +182,7 @@ app.post('/api/transact', (req, res) => {
       //Create a new transaction
       transaction = wallet.createTransaction({
         recipient,
-        amount,
+        amount: parseInt(amount),
         chain: blockchain.chain,
       });
     }
@@ -207,7 +203,7 @@ app.post('/api/transact', (req, res) => {
 });
 
 app.get('/api/transaction-pool-map', (req, res) => {
-  res.status(200).json(transactionPool.transactionMap);
+  res.json(transactionPool.transactionMap);
 });
 
 app.get('/api/mine-transactions', (req, res) => {
@@ -221,22 +217,16 @@ app.get('/api/wallet-info', (req, res) => {
 
   res.json({
     address,
-    balance: Wallet.calculateBalance({
-      chain: blockchain.chain,
-      address,
-    }),
+    balance: Wallet.calculateBalance({ chain: blockchain.chain, address }),
   });
 });
 
-//=====================================
-//========== FRONT END API's ==========
-//=====================================
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, './client/dist/index.html'));
-});
-
 //======================================================================================
+
+if (process.env.GENERATE_PEER_PORT === 'true') {
+  PEER_PORT = DEFAULT_PORT + Math.ceil(Math.random() * 1000);
+}
+
 const PORT = process.env.PORT || PEER_PORT || DEFAULT_PORT;
 
 app.listen(PORT, () => {

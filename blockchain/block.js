@@ -20,7 +20,7 @@ class Block {
 
   static genesis() {
     //Creates an instance of this class
-    return new Block(GENESIS_DATA);
+    return new this(GENESIS_DATA);
   }
   //===============================================================
 

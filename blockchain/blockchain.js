@@ -84,7 +84,7 @@ class Blockchain {
           }
         } else {
           if (!Transaction.validTransaction(transaction)) {
-            console.error('Invalid Transaction');
+            console.error('Invalid transaction');
             return false;
           }
 
@@ -128,7 +128,7 @@ class Blockchain {
 
     for (let i = 1; i < chain.length; i++) {
       //Get data from each of the blocks
-      const { timestamp, lastHash, hash, data, nonce, difficulty } = chain[i];
+      const { timestamp, lastHash, hash, nonce, difficulty, data } = chain[i];
 
       //Check the hash from the previews block
       const actualLastHash = chain[i - 1].hash;
