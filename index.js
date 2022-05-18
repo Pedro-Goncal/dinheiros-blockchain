@@ -7,6 +7,8 @@ const TransactionPool = require('./wallet/transaction-pool');
 const Wallet = require('./wallet/wallet');
 const TransactionMiner = require('./app/transaction-miner');
 
+const isDevelopment = process.env.ENV === 'development';
+
 //TERMINAL COLOURS FOR FUN
 const color = require('colors');
 
@@ -20,6 +22,11 @@ const cors = require('cors');
 //PORT
 const DEFAULT_PORT = 4000;
 let PEER_PORT;
+
+//REDIS URL
+const REDIS_URL = isDevelopment
+  ? 'redis://127.0.0.1:6379'
+  : 'redis://:pb0eb61391fb81089f12964620604dd14b365545a09a0e604658dcfe5201cddaa@ec2-52-72-65-222.compute-1.amazonaws.com:32509';
 
 if (process.env.GENERATE_PEER_PORT === 'true') {
   PEER_PORT = DEFAULT_PORT + Math.ceil(Math.random() * 1000);
@@ -75,7 +82,7 @@ const transactionPool = new TransactionPool();
 const wallet = new Wallet();
 
 //Initialize pub sub
-const pubsub = new PubSub({ blockchain, transactionPool });
+const pubsub = new PubSub({ blockchain, transactionPool, redisUrl: REDIS_URL });
 
 //Initialize Transaction Miner
 const transactionMiner = new TransactionMiner({
@@ -91,7 +98,7 @@ const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`;
 //=========================================
 //=============== Seeding =================
 //=========================================
-if (process.env.NODE_ENV === 'development') {
+if (isDevelopment) {
   const walletFoo = new Wallet();
   const walletBar = new Wallet();
 
@@ -230,7 +237,7 @@ app.get('*', (req, res) => {
 });
 
 //======================================================================================
-const PORT = PEER_PORT || DEFAULT_PORT;
+const PORT = process.env.PORT || PEER_PORT || DEFAULT_PORT;
 
 app.listen(PORT, () => {
   //Once a new connection is open it syncs the most recent chain

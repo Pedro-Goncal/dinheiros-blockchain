@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --watchAll",
-    "start": "index.js",
-    "dev": "nodemon",
-    "dev-peer": "cross-env GENERATE_PEER_PORT='true' nodemon index.js",
+    "start": "node index.js",
+    "dev": "cross-env ENV='development' && nodemon",
+    "dev-peer": "cross-env GENERATE_PEER_PORT='true' ENV='development' nodemon index.js",
     "build-client": "parcel build client/src/index.html --out-dir client/dist",
     "dev-client": "parcel client/src/index.html --out-dir client/dist"
   },
