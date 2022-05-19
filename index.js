@@ -9,14 +9,15 @@ const TransactionPool = require('./wallet/transaction-pool');
 const Wallet = require('./wallet/wallet');
 const TransactionMiner = require('./app/transaction-miner');
 
-const isDevelopment = process.env.ENV === 'development';
-
 //TERMINAL COLOURS FOR FUN
 const color = require('colors');
 
 //DOTENV
 const dotenv = require('dotenv');
 dotenv.config();
+
+const isDevelopment =
+  process.env.NODE_ENV === 'development' || process.env.ENV === 'development';
 
 //CORS
 const cors = require('cors');
@@ -94,68 +95,34 @@ const transactionMiner = new TransactionMiner({
 //ROOT NODE ADDRESS
 const ROOT_NODE_ADDRESS = `http://localhost:${DEFAULT_PORT}`;
 
-//=========================================
-//=============== Seeding =================
-//=========================================
-if (isDevelopment) {
-  const walletFoo = new Wallet();
-  const walletBar = new Wallet();
-
-  const generateWalletTransaction = ({ wallet, recipient, amount }) => {
-    const transaction = wallet.createTransaction({
-      recipient,
-      amount,
-      chain: blockchain.chain,
-    });
-
-    transactionPool.setTransaction(transaction);
-  };
-
-  const walletAction = () =>
-    generateWalletTransaction({
-      wallet,
-      recipient: walletFoo.publicKey,
-      amount: 5,
-    });
-
-  const walletFooAction = () =>
-    generateWalletTransaction({
-      wallet: walletFoo,
-      recipient: walletBar.publicKey,
-      amount: 10,
-    });
-
-  const walletBarAction = () =>
-    generateWalletTransaction({
-      wallet: walletBar,
-      recipient: wallet.publicKey,
-      amount: 15,
-    });
-
-  for (let i = 0; i < 20; i++) {
-    if (i % 3 === 0) {
-      walletAction();
-      walletFooAction();
-    } else if (i % 3 === 1) {
-      walletAction();
-      walletBarAction();
-    } else {
-      walletFooAction();
-      walletBarAction();
-    }
-
-    transactionMiner.mineTransactions();
-  }
-}
-
-//=========================================
-
 //===================
 //APIs
 //===================
 
 app.get('/api/blocks', (req, res) => {
   res.json(blockchain.chain);
+});
+
+app.get('/api/blocks/length', (req, res) => {
+  res.json(blockchain.chain.length);
+});
+
+app.get('/api/blocks/:page', (req, res) => {
+  const { page } = req.params;
+  const { length } = blockchain.chain;
+
+  //Create a copy of the chain and reverses it
+  //we use slice with zero arguments so it actually creates a new copy
+  //because the reverse() mutates the array insted of returning a new array
+  const blocksReversed = blockchain.chain.slice().reverse();
+
+  let startIndex = (page - 1) * 5;
+  let endIndex = page * 5;
+
+  startIndex = startIndex < length ? startIndex : length;
+  endIndex = endIndex < length ? endIndex : length;
+
+  res.json(blocksReversed.slice(startIndex, endIndex));
 });
 
 app.post('/api/mine', (req, res) => {
@@ -221,7 +188,77 @@ app.get('/api/wallet-info', (req, res) => {
   });
 });
 
+app.get('/api/known-addresses', (req, res) => {
+  const addressMap = {};
+
+  for (let block of blockchain.chain) {
+    for (let transaction of block.data) {
+      const recipient = Object.keys(transaction.outputMap);
+
+      recipient.forEach((recipient) => (addressMap[recipient] = recipient));
+    }
+  }
+
+  res.json(Object.keys(addressMap));
+});
+
 //======================================================================================
+
+//=========================================
+//=============== Seeding =================
+//=========================================
+if (isDevelopment) {
+  const walletFoo = new Wallet();
+  const walletBar = new Wallet();
+
+  const generateWalletTransaction = ({ wallet, recipient, amount }) => {
+    const transaction = wallet.createTransaction({
+      recipient,
+      amount,
+      chain: blockchain.chain,
+    });
+
+    transactionPool.setTransaction(transaction);
+  };
+
+  const walletAction = () =>
+    generateWalletTransaction({
+      wallet,
+      recipient: walletFoo.publicKey,
+      amount: 5,
+    });
+
+  const walletFooAction = () =>
+    generateWalletTransaction({
+      wallet: walletFoo,
+      recipient: walletBar.publicKey,
+      amount: 10,
+    });
+
+  const walletBarAction = () =>
+    generateWalletTransaction({
+      wallet: walletBar,
+      recipient: wallet.publicKey,
+      amount: 15,
+    });
+
+  for (let i = 0; i < 20; i++) {
+    if (i % 3 === 0) {
+      walletAction();
+      walletFooAction();
+    } else if (i % 3 === 1) {
+      walletAction();
+      walletBarAction();
+    } else {
+      walletFooAction();
+      walletBarAction();
+    }
+
+    transactionMiner.mineTransactions();
+  }
+}
+
+//=========================================
 
 if (process.env.GENERATE_PEER_PORT === 'true') {
   PEER_PORT = DEFAULT_PORT + Math.ceil(Math.random() * 1000);
